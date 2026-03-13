@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 个人博客</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="auth-page">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2><i class="fas fa-blog"></i> 个人博客</h2>
+            <p>欢迎回来，请登录您的账号</p>
+        </div>
+        
+        <div th:if="${param.success}" class="alert alert-success" style="background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+            注册成功，请登录
+        </div>
+        
+        <div th:if="${param.error}" class="alert alert-error" style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+            用户名或密码错误
+        </div>
+        
+        <!-- 登录方式切换 -->
+        <div class="login-tabs" style="display: flex; margin-bottom: 20px; border-bottom: 1px solid #e8e8e8;">
+            <button class="tab-btn active" onclick="switchTab('password')" id="tab-password" style="flex: 1; padding: 10px; border: none; background: none; cursor: pointer; border-bottom: 2px solid #667eea;">密码登录</button>
+            <button class="tab-btn" onclick="switchTab('captcha')" id="tab-captcha" style="flex: 1; padding: 10px; border: none; background: none; cursor: pointer;">验证码登录</button>
+        </div>
+        
+        <!-- 密码登录表单 -->
+        <form id="password-form" onsubmit="return handlePasswordLogin(event)">
+            <div class="form-group">
+                <label>用户名/邮箱</label>
+                <input type="text" class="form-control" id="credential" placeholder="请输入用户名或邮箱" required>
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" class="form-control" id="password" placeholder="请输入密码" required>
+            </div>
+            <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                    <input type="checkbox" id="remember"> 记住我
+                </label>
+                <a href="/forgot-password" style="font-size: 14px;">忘记密码？</a>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+                <i class="fas fa-sign-in-alt"></i> 登录
+            </button>
+        </form>
+        
+        <!-- 验证码登录表单 -->
+        <form id="captcha-form" style="display: none;" onsubmit="return handleCaptchaLogin(event)">
+            <div class="form-group">
+                <label>邮箱</label>
+                <input type="email" class="form-control" id="login-email" placeholder="请输入邮箱" required>
+            </div>
+            <div class="form-group">
+                <label>验证码</label>
+                <div class="form-row">
+                    <input type="text" class="form-control" id="login-captcha" placeholder="请输入验证码" required>
+                    <button type="button" class="btn btn-secondary captcha-btn" id="send-login-captcha" onclick="sendLoginCaptcha()">
+                        发送验证码
+                    </button>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+                <i class="fas fa-sign-in-alt"></i> 登录
+            </button>
+        </form>
+        
+        <div class="auth-divider">
+            <span>其他登录方式</span>
+        </div>
+        
+        <div class="social-login">
+            <a href="/api/auth/login/gitee" class="social-btn gitee" title="Gitee登录">
+                <i class="fab fa-git-alt"></i>
+            </a>
+        </div>
+        
+        <div class="form-footer">
+            还没有账号？<a href="/register">立即注册</a>
+        </div>
+    </div>
+    
+    <script th:src="@{/js/app.js}"></script>
+    <script>
+        // 切换登录方式
+        function switchTab(type) {
+            const passwordForm = document.getElementById('password-form');
+            const captchaForm = document.getElementById('captcha-form');
+            const tabPassword = document.getElementById('tab-password');
+            const tabCaptcha = document.getElementById('tab-captcha');
+            
+            if (type === 'password') {
+                passwordForm.style.display = 'block';
+                captchaForm.style.display = 'none';
+                tabPassword.style.borderBottom = '2px solid #667eea';
+                tabCaptcha.style.borderBottom = 'none';
+            } else {
+                passwordForm.style.display = 'none';
+                captchaForm.style.display = 'block';
+                tabPassword.style.borderBottom = 'none';
+                tabCaptcha.style.borderBottom = '2px solid #667eea';
+            }
+        }
+        
+        // 密码登录
+        async function handlePasswordLogin(e) {
+            e.preventDefault();
+            const credential = document.getElementById('credential').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const result = await Auth.login(credential, password);
+                if (result.success) {
+                    Toast.success('登录成功');
+                    setTimeout(() => {
+                        const user = Utils.getUser();
+                        if (user && user.role === 'ADMIN') {
+                            window.location.href = '/admin/articles';
+                        } else {
+                            window.location.href = '/';
+                        }
+                    }, 1000);
+                } else {
+                    Toast.error(result.message || '登录失败');
+                }
+            } catch (e) {
+                Toast.error('登录失败，请稍后重试');
+            }
+            return false;
+        }
+        
+        // 发送登录验证码
+        let loginCaptchaCountdown = 0;
+        async function sendLoginCaptcha() {
+            if (loginCaptchaCountdown > 0) return;
+            
+            const email = document.getElementById('login-email').value;
+            if (!email) {
+                Toast.warning('请输入邮箱');
+                return;
+            }
+            
+            try {
+                const result = await Auth.sendCaptcha(email, 'LOGIN');
+                if (result.success) {
+                    Toast.success('验证码已发送');
+                    startLoginCountdown();
+                } else {
+                    Toast.error(result.message || '发送失败');
+                }
+            } catch (e) {
+                Toast.error('发送失败，请稍后重试');
+            }
+        }
+        
+        function startLoginCountdown() {
+            loginCaptchaCountdown = 60;
+            const btn = document.getElementById('send-login-captcha');
+            const timer = setInterval(() => {
+                if (loginCaptchaCountdown > 0) {
+                    btn.textContent = `${loginCaptchaCountdown}s`;
+                    btn.disabled = true;
+                    loginCaptchaCountdown--;
+                } else {
+                    btn.textContent = '发送验证码';
+                    btn.disabled = false;
+                    clearInterval(timer);
+                }
+            }, 1000);
+        }
+        
+        // 验证码登录
+        async function handleCaptchaLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const captcha = document.getElementById('login-captcha').value;
+            
+            try {
+                const result = await Auth.loginByCaptcha(email, captcha);
+                if (result.success) {
+                    Toast.success('登录成功');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                } else {
+                    Toast.error(result.message || '登录失败');
+                }
+            } catch (e) {
+                Toast.error('登录失败，请稍后重试');
+            }
+            return false;
+        }
+        
+        // 检查是否已登录
+        if (Utils.isLoggedIn()) {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: head('个人中心')"></head>
+<body>
+    <nav th:replace="fragments/header :: navbar"></nav>
+    
+    <div class="container">
+        <div class="main-content">
+            <div class="content-area">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-user-cog"></i>
+                        <span>个人中心</span>
+                    </div>
+                    <div class="card-body">
+                        <!-- 个人信息 -->
+                        <div class="profile-section" style="display: flex; gap: 40px; margin-bottom: 40px;">
+                            <div class="avatar-section" style="text-align: center;">
+                                <img id="user-avatar" src="/images/default-avatar.svg" alt="头像" 
+                                     style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--primary-color); object-fit: cover;">
+                                <div style="margin-top: 15px;">
+                                    <label class="btn btn-sm btn-secondary" style="cursor: pointer;">
+                                        <i class="fas fa-camera"></i> 更换头像
+                                        <input type="file" id="avatar-input" accept="image/*" style="display: none;">
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="info-section" style="flex: 1;">
+                                <form id="profile-form">
+                                    <div class="form-group">
+                                        <label>用户名</label>
+                                        <input type="text" class="form-control" id="profile-username" disabled>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>昵称</label>
+                                        <input type="text" class="form-control" id="profile-nickname" placeholder="请输入昵称">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>邮箱</label>
+                                        <input type="email" class="form-control" id="profile-email" disabled>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>个人简介</label>
+                                        <textarea class="form-control" id="profile-intro" rows="3" placeholder="介绍一下自己吧"></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> 保存修改
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- 账号安全 -->
+                        <div class="security-section" style="border-top: 1px solid var(--border-color); padding-top: 30px;">
+                            <h4 style="margin-bottom: 20px;"><i class="fas fa-shield-alt"></i> 账号安全</h4>
+                            
+                            <div class="security-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px dashed var(--border-color);">
+                                <div>
+                                    <h5>修改密码</h5>
+                                    <p style="color: var(--text-muted); font-size: 14px;">定期修改密码可以保护账号安全</p>
+                                </div>
+                                <button class="btn btn-sm btn-secondary" onclick="showPasswordModal()">
+                                    <i class="fas fa-key"></i> 修改
+                                </button>
+                            </div>
+                            
+                            <div class="security-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0;">
+                                <div>
+                                    <h5>变更邮箱</h5>
+                                    <p style="color: var(--text-muted); font-size: 14px;">当前邮箱：<span id="current-email">-</span></p>
+                                </div>
+                                <button class="btn btn-sm btn-secondary" onclick="showEmailModal()">
+                                    <i class="fas fa-envelope"></i> 变更
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <aside th:replace="fragments/sidebar :: sidebar"></aside>
+        </div>
+    </div>
+    
+    <!-- 修改密码弹窗 -->
+    <div id="password-modal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: white; padding: 30px; border-radius: var(--radius); width: 400px; max-width: 90%;">
+            <h3 style="margin-bottom: 20px;"><i class="fas fa-key"></i> 修改密码</h3>
+            <form id="password-form" onsubmit="return changePassword(event)">
+                <div class="form-group">
+                    <label>旧密码</label>
+                    <input type="password" class="form-control" id="old-password" required>
+                </div>
+                <div class="form-group">
+                    <label>新密码</label>
+                    <input type="password" class="form-control" id="new-password" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>确认新密码</label>
+                    <input type="password" class="form-control" id="confirm-new-password" required>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="hidePasswordModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">确认修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 变更邮箱弹窗 -->
+    <div id="email-modal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: white; padding: 30px; border-radius: var(--radius); width: 400px; max-width: 90%;">
+            <h3 style="margin-bottom: 20px;"><i class="fas fa-envelope"></i> 变更邮箱</h3>
+            <form id="email-form" onsubmit="return changeEmail(event)">
+                <div class="form-group">
+                    <label>新邮箱</label>
+                    <input type="email" class="form-control" id="new-email" required>
+                </div>
+                <div class="form-group">
+                    <label>验证码</label>
+                    <div class="form-row">
+                        <input type="text" class="form-control" id="email-captcha" required>
+                        <button type="button" class="btn btn-secondary captcha-btn" id="send-email-captcha" onclick="sendEmailCaptcha()">发送验证码</button>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="hideEmailModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">确认变更</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <footer th:replace="fragments/footer :: footer"></footer>
+    <th:block th:replace="fragments/footer :: scripts"></th:block>
+    
+    <script>
+        let currentUser = null;
+        
+        // 页面加载时获取用户信息
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Utils.isLoggedIn()) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            currentUser = Utils.getUser();
+            if (currentUser) {
+                loadUserProfile();
+            }
+        });
+        
+        // 加载用户信息
+        function loadUserProfile() {
+            document.getElementById('profile-username').value = currentUser.username || '';
+            document.getElementById('profile-nickname').value = currentUser.nickname || '';
+            document.getElementById('profile-email').value = currentUser.email || '';
+            document.getElementById('current-email').textContent = currentUser.email || '-';
+            document.getElementById('profile-intro').value = currentUser.intro || '';
+            
+            if (currentUser.avatar) {
+                document.getElementById('user-avatar').src = currentUser.avatar;
+            }
+        }
+        
+        // 保存个人信息
+        document.getElementById('profile-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const nickname = document.getElementById('profile-nickname').value;
+            const intro = document.getElementById('profile-intro').value;
+            
+            try {
+                const result = await Api.put(`/api/user/profile/${currentUser.id}`, {
+                    nickname,
+                    intro
+                });
+                
+                if (result) {
+                    currentUser.nickname = nickname;
+                    currentUser.intro = intro;
+                    Utils.setUser(currentUser);
+                    
+                    // 仅当当前用户是管理员时更新侧边栏，否则保持显示博主（管理员）信息
+                    if (currentUser.role === 'ADMIN') {
+                        // 更新昵称和角色标签
+                        const nameEl = document.querySelector('.blogger-name');
+                        if (nameEl) {
+                            // 管理员添加图标标识
+                            nameEl.innerHTML = `${nickname || currentUser.username} <i class="fas fa-shield-alt" style="color: var(--primary-color); margin-left: 5px;" title="管理员"></i>`;
+                        }
+                        
+                        // 更新简介
+                        const introEl = document.querySelector('.blogger-intro');
+                        if (introEl) {
+                            introEl.textContent = intro || '暂无介绍';
+                        }
+                    }
+                
+                    Toast.success('保存成功');
+                }
+            } catch (e) {
+                Toast.error('保存失败');
+            }
+        });
+        
+        // 更新侧边栏信息
+        function updateSidebar(data) {
+            // 更新侧边栏信息，不再限制只更新管理员
+            if (currentUser) {
+                if (data.avatar) {
+                    const avatarEl = document.querySelector('.blogger-avatar');
+                    if (avatarEl) avatarEl.src = data.avatar;
+                }
+                
+                // 更新昵称和角色标签
+                if (data.nickname) {
+                    const nameEl = document.querySelector('.blogger-name');
+                    if (nameEl) {
+                        // 如果是管理员，添加管理员图标标识
+                        if (currentUser.role === 'ADMIN') {
+                            nameEl.innerHTML = `${data.nickname} <i class="fas fa-shield-alt" style="color: var(--primary-color); margin-left: 5px;" title="管理员"></i>`;
+                        } else {
+                            nameEl.textContent = data.nickname;
+                        }
+                    }
+                }
+                
+                if (data.intro !== undefined) {
+                    const introEl = document.querySelector('.blogger-intro');
+                    if (introEl) introEl.textContent = data.intro || '暂无介绍';
+                }
+            }
+        }
+
+        // 上传头像
+        document.getElementById('avatar-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (file.size > 2 * 1024 * 1024) {
+                Toast.error('图片大小不能超过2MB');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                // 修改为通用的文件上传接口，因为 /api/user/avatar 可能不存在或有问题
+                // 通常文件上传是通用的，然后更新用户资料
+                // 先尝试原来的接口，如果失败再尝试通用文件上传
+                
+                // 这里我们直接使用通用的文件上传接口，然后更新用户信息
+                const uploadResponse = await fetch('/api/files/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${Utils.getToken()}`
+                    },
+                    body: formData
+                });
+                
+                const uploadResult = await uploadResponse.json();
+                
+                if (uploadResult.success) {
+                    // 使用 /uploads/ 路径直接访问图片，避免 Content-Disposition: attachment 问题
+                    const avatarUrl = '/uploads/' + uploadResult.fileName;
+                    
+                    // 更新用户头像信息
+                    const updateResponse = await Api.put(`/api/user/profile/${currentUser.id}`, {
+                        avatar: avatarUrl
+                    });
+                    
+                    if (updateResponse) {
+                        document.getElementById('user-avatar').src = avatarUrl;
+                        currentUser.avatar = avatarUrl;
+                        Utils.setUser(currentUser);
+                        
+                        // 仅当当前用户是管理员时更新侧边栏
+                        if (currentUser.role === 'ADMIN') {
+                            updateSidebar({ avatar: avatarUrl });
+                        }
+                        
+                        Toast.success('头像更新成功');
+                        
+                        // 刷新页面以更新侧边栏（如果不在单页应用模式下）
+                        setTimeout(() => location.reload(), 1000);
+                    }
+                } else {
+                    Toast.error(uploadResult.message || '上传失败');
+                }
+            } catch (e) {
+                console.error(e);
+                Toast.error('上传失败');
+            }
+        });
+        
+        // 显示/隐藏密码弹窗
+        function showPasswordModal() {
+            document.getElementById('password-modal').style.display = 'flex';
+        }
+        function hidePasswordModal() {
+            document.getElementById('password-modal').style.display = 'none';
+            document.getElementById('password-form').reset();
+        }
+        
+        // 修改密码
+        async function changePassword(e) {
+            e.preventDefault();
+            
+            const oldPassword = document.getElementById('old-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-new-password').value;
+            
+            if (newPassword !== confirmPassword) {
+                Toast.error('两次输入的密码不一致');
+                return false;
+            }
+            
+            try {
+                const result = await Api.post('/api/user/change-password', {
+                    oldPassword,
+                    newPassword
+                });
+                
+                if (result.success) {
+                    Toast.success('密码修改成功');
+                    hidePasswordModal();
+                } else {
+                    Toast.error(result.message || '修改失败');
+                }
+            } catch (e) {
+                Toast.error('修改失败');
+            }
+            return false;
+        }
+        
+        // 显示/隐藏邮箱弹窗
+        function showEmailModal() {
+            document.getElementById('email-modal').style.display = 'flex';
+        }
+        function hideEmailModal() {
+            document.getElementById('email-modal').style.display = 'none';
+            document.getElementById('email-form').reset();
+        }
+        
+        // 发送邮箱验证码
+        let emailCaptchaCountdown = 0;
+        async function sendEmailCaptcha() {
+            if (emailCaptchaCountdown > 0) return;
+            
+            const email = document.getElementById('new-email').value;
+            if (!email) {
+                Toast.warning('请输入新邮箱');
+                return;
+            }
+            
+            try {
+                const result = await Auth.sendCaptcha(email, 'EMAIL_CHANGE');
+                if (result.success) {
+                    Toast.success('验证码已发送');
+                    emailCaptchaCountdown = 60;
+                    const btn = document.getElementById('send-email-captcha');
+                    const timer = setInterval(() => {
+                        if (emailCaptchaCountdown > 0) {
+                            btn.textContent = `${emailCaptchaCountdown}s`;
+                            btn.disabled = true;
+                            emailCaptchaCountdown--;
+                        } else {
+                            btn.textContent = '发送验证码';
+                            btn.disabled = false;
+                            clearInterval(timer);
+                        }
+                    }, 1000);
+                } else {
+                    Toast.error(result.message || '发送失败');
+                }
+            } catch (e) {
+                Toast.error('发送失败');
+            }
+        }
+        
+        // 变更邮箱
+        async function changeEmail(e) {
+            e.preventDefault();
+            
+            const newEmail = document.getElementById('new-email').value;
+            const captcha = document.getElementById('email-captcha').value;
+            
+            try {
+                const result = await Api.post('/api/user/change-email', {
+                    newEmail,
+                    captcha
+                });
+                
+                if (result.success) {
+                    Toast.success('邮箱变更成功');
+                    currentUser.email = newEmail;
+                    Utils.setUser(currentUser);
+                    document.getElementById('profile-email').value = newEmail;
+                    document.getElementById('current-email').textContent = newEmail;
+                    hideEmailModal();
+                } else {
+                    Toast.error(result.message || '变更失败');
+                }
+            } catch (e) {
+                Toast.error('变更失败');
+            }
+            return false;
+        }
+    </script>
+</body>
+</html>

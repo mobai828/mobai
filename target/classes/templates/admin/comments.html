@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>评论管理 - 个人博客</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body class="admin-body">
+    <div class="admin-container">
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <a href="/" class="logo"><i class="fas fa-blog"></i><span>博客管理</span></a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/admin" class="nav-item"><i class="fas fa-tachometer-alt"></i><span>仪表盘</span></a>
+                <a href="/admin/articles" class="nav-item"><i class="fas fa-file-alt"></i><span>文章管理</span></a>
+                <a href="/admin/categories" class="nav-item"><i class="fas fa-folder"></i><span>分类管理</span></a>
+                <a href="/admin/tags" class="nav-item"><i class="fas fa-tags"></i><span>标签管理</span></a>
+                <a href="/admin/comments" class="nav-item active"><i class="fas fa-comments"></i><span>评论管理</span></a>
+                <a href="/admin/users" class="nav-item"><i class="fas fa-users"></i><span>用户管理</span></a>
+                <a href="/admin/links" class="nav-item"><i class="fas fa-link"></i><span>友链管理</span></a>
+                <a href="/admin/settings" class="nav-item"><i class="fas fa-cog"></i><span>系统设置</span></a>
+            </nav>
+        </aside>
+        
+        <main class="admin-main">
+            <header class="admin-header">
+                <div class="header-left">
+                    <button class="toggle-sidebar" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                    <h1>评论管理</h1>
+                </div>
+            </header>
+            
+            <div class="admin-content">
+                <div class="admin-table-card">
+                    <div class="table-header">
+                        <h3>评论列表</h3>
+                    </div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>评论者</th>
+                                <th>内容</th>
+                                <th>文章</th>
+                                <th>状态</th>
+                                <th>时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comment-list">
+                            <tr><td colspan="7" class="text-center">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="admin-pagination" id="pagination"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script th:src="@{/js/app.js}"></script>
+    <script>
+        let currentPage = 0;
+        let totalPages = 0;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!Utils.isLoggedIn()) {
+                window.location.href = '/login';
+                return;
+            }
+            loadComments();
+        });
+        
+        async function loadComments(page = 0) {
+            currentPage = page;
+            try {
+                const result = await Api.get(`/api/admin/comments?page=${page}&size=10`);
+                if (result.success) {
+                    totalPages = result.totalPages || 0;
+                    renderComments(result.data || []);
+                    renderPagination();
+                } else {
+                    document.getElementById('comment-list').innerHTML = '<tr><td colspan="7" class="text-center">加载失败: ' + (result.message || '未知错误') + '</td></tr>';
+                }
+            } catch (e) {
+                console.error('加载评论失败:', e);
+                document.getElementById('comment-list').innerHTML = '<tr><td colspan="7" class="text-center">加载失败，请确保已登录管理员账号</td></tr>';
+            }
+        }
+        
+        function renderComments(comments) {
+            const tbody = document.getElementById('comment-list');
+            if (comments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">暂无评论</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = comments.map(comment => `
+                <tr>
+                    <td>${comment.id}</td>
+                    <td>${comment.nickname || '匿名'}</td>
+                    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${comment.content}</td>
+                    <td><a href="/article/${comment.articleId}" target="_blank">#${comment.articleId}</a></td>
+                    <td><span class="status-badge ${getStatusClass(comment.status)}">${getStatusText(comment.status)}</span></td>
+                    <td>${Utils.formatDateTime(comment.createTime)}</td>
+                    <td class="actions">
+                        ${comment.status === 0 ? `
+                            <button class="btn-approve" onclick="approveComment(${comment.id})" title="通过"><i class="fas fa-check"></i></button>
+                            <button class="btn-delete" onclick="rejectComment(${comment.id})" title="拒绝"><i class="fas fa-times"></i></button>
+                        ` : ''}
+                        <button class="btn-delete" onclick="deleteComment(${comment.id})" title="删除"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function getStatusClass(status) {
+            switch(status) {
+                case 0: return 'pending';
+                case 1: return 'approved';
+                case 2: return 'rejected';
+                default: return '';
+            }
+        }
+        
+        function getStatusText(status) {
+            switch(status) {
+                case 0: return '待审核';
+                case 1: return '已通过';
+                case 2: return '已拒绝';
+                default: return '未知';
+            }
+        }
+        
+        function renderPagination() {
+            const container = document.getElementById('pagination');
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            let html = `<button ${currentPage === 0 ? 'disabled' : ''} onclick="loadComments(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+            for (let i = 0; i < totalPages; i++) {
+                html += `<button class="${i === currentPage ? 'active' : ''}" onclick="loadComments(${i})">${i + 1}</button>`;
+            }
+            html += `<button ${currentPage >= totalPages - 1 ? 'disabled' : ''} onclick="loadComments(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+            container.innerHTML = html;
+        }
+        
+        async function approveComment(id) {
+            try {
+                await Api.put(`/api/admin/comments/${id}/approve`);
+                Toast.success('审核通过');
+                loadComments(currentPage);
+            } catch (e) {
+                Toast.error('操作失败');
+            }
+        }
+        
+        async function rejectComment(id) {
+            try {
+                await Api.put(`/api/admin/comments/${id}/reject`);
+                Toast.success('已拒绝');
+                loadComments(currentPage);
+            } catch (e) {
+                Toast.error('操作失败');
+            }
+        }
+        
+        async function deleteComment(id) {
+            if (!confirm('确定要删除这条评论吗？')) return;
+            try {
+                await Api.delete(`/api/admin/comments/${id}`);
+                Toast.success('删除成功');
+                loadComments(currentPage);
+            } catch (e) {
+                Toast.error('删除失败');
+            }
+        }
+        
+        function toggleSidebar() {
+            document.querySelector('.admin-container').classList.toggle('sidebar-collapsed');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: head('首页')"></head>
+<body>
+    <nav th:replace="fragments/header :: navbar"></nav>
+    
+    <div class="container">
+        <div class="main-content">
+            <div class="content-area">
+                <!-- 文章列表 -->
+                <div class="article-list">
+                    <div th:each="article : ${articles}" class="article-card fade-in">
+                        <div class="article-cover" th:if="${article.cover}">
+                            <a th:href="@{/article/{id}(id=${article.id})}">
+                                <img th:src="${article.cover}" alt="文章封面">
+                            </a>
+                        </div>
+                        <div class="article-cover" th:unless="${article.cover}">
+                            <a th:href="@{/article/{id}(id=${article.id})}">
+                                <img src="/images/default-cover.svg" alt="默认封面">
+                            </a>
+                        </div>
+                        <div class="article-info">
+                            <div class="article-meta">
+                                <span class="article-category" th:if="${article.categoryId != null && categoryMap.get(article.categoryId) != null}">
+                                    <i class="fas fa-folder"></i>
+                                    <span th:text="${categoryMap.get(article.categoryId)}">分类</span>
+                                </span>
+                                <span class="article-category" th:if="${article.categoryId == null}">
+                                    <i class="fas fa-folder"></i>
+                                    <span>未分类</span>
+                                </span>
+                                <span>
+                                    <i class="fas fa-calendar"></i>
+                                    <span th:text="${#temporals.format(article.createTime, 'yyyy-MM-dd')}">2024-01-01</span>
+                                </span>
+                                <!-- 标签展示 -->
+                                <span class="article-tags" th:if="${articleTagsMap.get(article.id) != null && !articleTagsMap.get(article.id).isEmpty()}">
+                                    <span th:each="tag : ${articleTagsMap.get(article.id)}" class="badge badge-tag" style="background-color: #ff9f43; color: white; margin-left: 10px; font-size: 0.8em; padding: 2px 8px; border-radius: 12px; vertical-align: middle;">
+                                        <i class="fas fa-tag" style="font-size: 0.9em; margin-right: 3px;"></i>
+                                        <span th:text="${tag.name}">标签名</span>
+                                    </span>
+                                </span>
+                                <span th:if="${article.isTop == 1}" style="color: #e74c3c;">
+                                    <i class="fas fa-thumbtack"></i> 置顶
+                                </span>
+                            </div>
+                            <h2 class="article-title">
+                                <a th:href="@{/article/{id}(id=${article.id})}" th:text="${article.title}">文章标题</a>
+                            </h2>
+                            <p class="article-summary" th:text="${#strings.abbreviate(article.content.replaceAll('<[^>]*>', ''), 200)}">
+                                文章摘要内容...
+                            </p>
+                            <div class="article-footer">
+                                <div class="article-stats">
+                                    <span><i class="fas fa-eye"></i> <span th:text="${article.viewCount}">0</span></span>
+                                    <span><i class="fas fa-heart"></i> <span th:text="${article.likeCount}">0</span></span>
+                                </div>
+                                <a th:href="@{/article/{id}(id=${article.id})}" class="btn btn-sm btn-primary">
+                                    阅读全文 <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 空状态 -->
+                    <div th:if="${#lists.isEmpty(articles)}" class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h4>暂无文章</h4>
+                        <p>博主还没有发布任何文章</p>
+                    </div>
+                </div>
+                
+                <!-- 分页 -->
+                <div class="pagination" th:if="${totalPages > 1}">
+                    <a th:if="${currentPage > 0}" th:href="@{/(page=${currentPage - 1})}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <span th:if="${currentPage == 0}" class="disabled">
+                        <i class="fas fa-chevron-left"></i>
+                    </span>
+                    
+                    <th:block th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                        <a th:if="${i != currentPage}" th:href="@{/(page=${i})}" th:text="${i + 1}">1</a>
+                        <span th:if="${i == currentPage}" class="active" th:text="${i + 1}">1</span>
+                    </th:block>
+                    
+                    <a th:if="${currentPage < totalPages - 1}" th:href="@{/(page=${currentPage + 1})}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                    <span th:if="${currentPage >= totalPages - 1}" class="disabled">
+                        <i class="fas fa-chevron-right"></i>
+                    </span>
+                </div>
+            </div>
+            
+            <aside th:replace="fragments/sidebar :: sidebar"></aside>
+        </div>
+    </div>
+    
+    <footer th:replace="fragments/footer :: footer"></footer>
+    <th:block th:replace="fragments/footer :: scripts"></th:block>
+</body>
+</html>

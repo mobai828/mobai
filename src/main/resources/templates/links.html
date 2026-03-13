@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: head('友情链接')"></head>
+<body>
+    <nav th:replace="fragments/header :: navbar"></nav>
+    
+    <div class="container">
+        <div class="main-content">
+            <div class="content-area">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-link"></i>
+                        <span>友情链接</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="links-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+                            <a th:each="link : ${links}" th:href="${link.url}" target="_blank" class="link-card" 
+                               style="display: flex; align-items: center; gap: 15px; padding: 20px; background: var(--bg-color); border-radius: var(--radius); transition: var(--transition); text-decoration: none;">
+                                <img th:src="${link.logo != null ? link.logo : '/images/default-avatar.svg'}" alt="Logo" 
+                                     style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
+                                <div>
+                                    <h4 style="color: var(--text-color); margin-bottom: 5px;" th:text="${link.name}">网站名称</h4>
+                                    <p style="color: var(--text-muted); font-size: 13px; line-height: 1.5;" th:text="${link.description}">网站描述</p>
+                                </div>
+                            </a>
+                            
+                            <div th:if="${#lists.isEmpty(links)}" class="empty-state" style="grid-column: 1 / -1;">
+                                <i class="fas fa-link"></i>
+                                <h4>暂无友链</h4>
+                                <p>还没有添加任何友情链接</p>
+                            </div>
+                        </div>
+                        
+                        <div class="apply-link" style="margin-top: 40px; padding: 30px; background: var(--bg-color); border-radius: var(--radius); text-align: center;">
+                            <h4 style="margin-bottom: 15px;"><i class="fas fa-handshake"></i> 申请友链</h4>
+                            <p style="color: var(--text-light); margin-bottom: 20px;">欢迎交换友情链接，请确保您的网站满足以下条件：</p>
+                            <ul style="text-align: left; max-width: 400px; margin: 0 auto 20px; color: var(--text-light);">
+                                <li>网站内容健康、合法</li>
+                                <li>网站已正常运行3个月以上</li>
+                                <li>已添加本站链接</li>
+                            </ul>
+                            <p style="color: var(--text-muted); font-size: 14px;">
+                                请发送邮件至 <a href="mailto:admin@example.com">admin@example.com</a> 申请
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <aside th:replace="fragments/sidebar :: sidebar"></aside>
+        </div>
+    </div>
+    
+    <footer th:replace="fragments/footer :: footer"></footer>
+    <th:block th:replace="fragments/footer :: scripts"></th:block>
+    
+    <style>
+        .link-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+            background: var(--white) !important;
+        }
+    </style>
+</body>
+</html>

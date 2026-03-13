@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} + ' - 个人博客'">个人博客</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<nav th:fragment="navbar" class="navbar">
+    <div class="container">
+        <a href="/" class="navbar-brand">
+            <i class="fas fa-blog"></i>
+            <span>个人博客</span>
+        </a>
+        
+        <ul class="navbar-menu">
+            <li><a th:classappend="${#httpServletRequest.requestURI == '/'} ? 'active'" href="/"><i class="fas fa-home"></i> 首页</a></li>
+            <li><a th:classappend="${#httpServletRequest.requestURI.startsWith('/category')} ? 'active'" href="/category"><i class="fas fa-folder"></i> 分类</a></li>
+            <li><a th:classappend="${#httpServletRequest.requestURI.startsWith('/tag')} ? 'active'" href="/tag"><i class="fas fa-tags"></i> 标签</a></li>
+            <li><a th:classappend="${#httpServletRequest.requestURI == '/archive'} ? 'active'" href="/archive"><i class="fas fa-archive"></i> 归档</a></li>
+            <li><a th:classappend="${#httpServletRequest.requestURI == '/links'} ? 'active'" href="/links"><i class="fas fa-link"></i> 友链</a></li>
+            <li><a th:classappend="${#httpServletRequest.requestURI == '/about'} ? 'active'" href="/about"><i class="fas fa-user"></i> 关于</a></li>
+        </ul>
+        
+        <div class="navbar-right">
+            <form class="search-box" action="/search" method="get">
+                <input type="text" name="keyword" placeholder="搜索文章...">
+                <button type="submit"><i class="fas fa-search"></i></button>
+            </form>
+            
+            <div class="auth-buttons">
+                <a href="/login" class="btn btn-outline">登录</a>
+                <a href="/register" class="btn btn-primary">注册</a>
+            </div>
+            
+            <div class="user-menu hidden">
+                <img src="/images/default-avatar.svg" alt="头像" class="user-avatar">
+                <div class="user-dropdown">
+                    <a href="/profile"><i class="fas fa-user"></i> 个人中心</a>
+                    <a href="/write-article"><i class="fas fa-pen"></i> 写文章</a>
+                    <a href="/admin" class="admin-link hidden"><i class="fas fa-cog"></i> 管理后台</a>
+                    <a href="javascript:void(0)" class="logout-btn"><i class="fas fa-sign-out-alt"></i> 退出登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置 - 个人博客</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body class="admin-body">
+    <div class="admin-container">
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <a href="/" class="logo"><i class="fas fa-blog"></i><span>博客管理</span></a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/admin" class="nav-item"><i class="fas fa-tachometer-alt"></i><span>仪表盘</span></a>
+                <a href="/admin/articles" class="nav-item"><i class="fas fa-file-alt"></i><span>文章管理</span></a>
+                <a href="/admin/categories" class="nav-item"><i class="fas fa-folder"></i><span>分类管理</span></a>
+                <a href="/admin/tags" class="nav-item"><i class="fas fa-tags"></i><span>标签管理</span></a>
+                <a href="/admin/comments" class="nav-item"><i class="fas fa-comments"></i><span>评论管理</span></a>
+                <a href="/admin/users" class="nav-item"><i class="fas fa-users"></i><span>用户管理</span></a>
+                <a href="/admin/links" class="nav-item"><i class="fas fa-link"></i><span>友链管理</span></a>
+                <a href="/admin/settings" class="nav-item active"><i class="fas fa-cog"></i><span>系统设置</span></a>
+            </nav>
+        </aside>
+        
+        <main class="admin-main">
+            <header class="admin-header">
+                <div class="header-left">
+                    <button class="toggle-sidebar" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                    <h1>系统设置</h1>
+                </div>
+            </header>
+            
+            <div class="admin-content">
+                <!-- 基本设置 -->
+                <div class="admin-table-card" style="margin-bottom: 20px;">
+                    <div class="table-header">
+                        <h3><i class="fas fa-cog"></i> 基本设置</h3>
+                    </div>
+                    <div style="padding: 20px;">
+                        <form id="basic-settings-form" class="admin-form">
+                            <div class="form-group">
+                                <label>网站名称</label>
+                                <input type="text" class="form-control" id="site-name" value="个人博客">
+                            </div>
+                            <div class="form-group">
+                                <label>网站描述</label>
+                                <textarea class="form-control" id="site-description" rows="2">一个记录技术与生活的博客</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>网站关键词</label>
+                                <input type="text" class="form-control" id="site-keywords" placeholder="关键词1, 关键词2, 关键词3">
+                            </div>
+                            <div class="form-group">
+                                <label>ICP备案号</label>
+                                <input type="text" class="form-control" id="site-icp" placeholder="例如：京ICP备xxxxxxxx号">
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="saveBasicSettings()">
+                                <i class="fas fa-save"></i> 保存设置
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- 博主信息 -->
+                <div class="admin-table-card" style="margin-bottom: 20px;">
+                    <div class="table-header">
+                        <h3><i class="fas fa-user"></i> 博主信息</h3>
+                    </div>
+                    <div style="padding: 20px;">
+                        <form id="blogger-settings-form" class="admin-form">
+                            <div class="form-group">
+                                <label>博主昵称</label>
+                                <input type="text" class="form-control" id="blogger-name" value="博主">
+                            </div>
+                            <div class="form-group">
+                                <label>博主头像</label>
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <img id="blogger-avatar-preview" src="/images/default-avatar.svg" alt="头像" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover;">
+                                    <input type="text" class="form-control" id="blogger-avatar" placeholder="头像URL" style="flex: 1;">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>个人简介</label>
+                                <textarea class="form-control" id="blogger-intro" rows="3">热爱技术，热爱生活</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>GitHub</label>
+                                <input type="url" class="form-control" id="blogger-github" placeholder="https://github.com/username">
+                            </div>
+                            <div class="form-group">
+                                <label>邮箱</label>
+                                <input type="email" class="form-control" id="blogger-email" placeholder="admin@example.com">
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="saveBloggerSettings()">
+                                <i class="fas fa-save"></i> 保存设置
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- 评论设置 -->
+                <div class="admin-table-card" style="margin-bottom: 20px;">
+                    <div class="table-header">
+                        <h3><i class="fas fa-comments"></i> 评论设置</h3>
+                    </div>
+                    <div style="padding: 20px;">
+                        <form id="comment-settings-form" class="admin-form">
+                            <div class="form-group">
+                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                    <input type="checkbox" id="comment-enabled" checked>
+                                    开启评论功能
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                    <input type="checkbox" id="comment-audit" checked>
+                                    评论需要审核
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                    <input type="checkbox" id="comment-login-required">
+                                    评论需要登录
+                                </label>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="saveCommentSettings()">
+                                <i class="fas fa-save"></i> 保存设置
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- 邮件设置 -->
+                <div class="admin-table-card">
+                    <div class="table-header">
+                        <h3><i class="fas fa-envelope"></i> 邮件设置</h3>
+                    </div>
+                    <div style="padding: 20px;">
+                        <form id="mail-settings-form" class="admin-form">
+                            <div class="form-group">
+                                <label>SMTP服务器</label>
+                                <input type="text" class="form-control" id="mail-host" placeholder="smtp.example.com">
+                            </div>
+                            <div class="form-group">
+                                <label>SMTP端口</label>
+                                <input type="number" class="form-control" id="mail-port" placeholder="465">
+                            </div>
+                            <div class="form-group">
+                                <label>发件人邮箱</label>
+                                <input type="email" class="form-control" id="mail-username" placeholder="noreply@example.com">
+                            </div>
+                            <div class="form-group">
+                                <label>邮箱密码/授权码</label>
+                                <input type="password" class="form-control" id="mail-password" placeholder="******">
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button type="button" class="btn btn-primary" onclick="saveMailSettings()">
+                                    <i class="fas fa-save"></i> 保存设置
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="testMail()">
+                                    <i class="fas fa-paper-plane"></i> 发送测试邮件
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script th:src="@{/js/app.js}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!Utils.isLoggedIn()) {
+                window.location.href = '/login';
+                return;
+            }
+            loadSettings();
+        });
+        
+        async function loadSettings() {
+            try {
+                const result = await Api.get('/api/admin/settings');
+                if (result.success && result.data) {
+                    const settings = result.data;
+                    // 填充表单
+                    if (settings.siteName) document.getElementById('site-name').value = settings.siteName;
+                    if (settings.siteDescription) document.getElementById('site-description').value = settings.siteDescription;
+                    if (settings.siteKeywords) document.getElementById('site-keywords').value = settings.siteKeywords;
+                    if (settings.siteIcp) document.getElementById('site-icp').value = settings.siteIcp;
+                    if (settings.bloggerName) document.getElementById('blogger-name').value = settings.bloggerName;
+                    if (settings.bloggerAvatar) {
+                        document.getElementById('blogger-avatar').value = settings.bloggerAvatar;
+                        document.getElementById('blogger-avatar-preview').src = settings.bloggerAvatar;
+                    }
+                    if (settings.bloggerIntro) document.getElementById('blogger-intro').value = settings.bloggerIntro;
+                    if (settings.bloggerGithub) document.getElementById('blogger-github').value = settings.bloggerGithub;
+                    if (settings.bloggerEmail) document.getElementById('blogger-email').value = settings.bloggerEmail;
+                    document.getElementById('comment-enabled').checked = settings.commentEnabled !== false;
+                    document.getElementById('comment-audit').checked = settings.commentAudit !== false;
+                    document.getElementById('comment-login-required').checked = settings.commentLoginRequired === true;
+                }
+            } catch (e) {
+                console.log('加载设置失败，使用默认值');
+            }
+        }
+        
+        async function saveBasicSettings() {
+            const data = {
+                siteName: document.getElementById('site-name').value,
+                siteDescription: document.getElementById('site-description').value,
+                siteKeywords: document.getElementById('site-keywords').value,
+                siteIcp: document.getElementById('site-icp').value
+            };
+            await saveSettings(data, '基本设置');
+        }
+        
+        async function saveBloggerSettings() {
+            const data = {
+                bloggerName: document.getElementById('blogger-name').value,
+                bloggerAvatar: document.getElementById('blogger-avatar').value,
+                bloggerIntro: document.getElementById('blogger-intro').value,
+                bloggerGithub: document.getElementById('blogger-github').value,
+                bloggerEmail: document.getElementById('blogger-email').value
+            };
+            await saveSettings(data, '博主信息');
+        }
+        
+        async function saveCommentSettings() {
+            const data = {
+                commentEnabled: document.getElementById('comment-enabled').checked,
+                commentAudit: document.getElementById('comment-audit').checked,
+                commentLoginRequired: document.getElementById('comment-login-required').checked
+            };
+            await saveSettings(data, '评论设置');
+        }
+        
+        async function saveMailSettings() {
+            const data = {
+                mailHost: document.getElementById('mail-host').value,
+                mailPort: document.getElementById('mail-port').value,
+                mailUsername: document.getElementById('mail-username').value,
+                mailPassword: document.getElementById('mail-password').value
+            };
+            await saveSettings(data, '邮件设置');
+        }
+        
+        async function saveSettings(data, name) {
+            try {
+                await Api.post('/api/admin/settings', data);
+                Toast.success(`${name}保存成功`);
+            } catch (e) {
+                Toast.error(`${name}保存失败`);
+            }
+        }
+        
+        async function testMail() {
+            try {
+                const result = await Api.post('/api/admin/settings/test-mail');
+                if (result.success) {
+                    Toast.success('测试邮件已发送');
+                } else {
+                    Toast.error(result.message || '发送失败');
+                }
+            } catch (e) {
+                Toast.error('发送测试邮件失败');
+            }
+        }
+        
+        // 头像预览
+        document.getElementById('blogger-avatar').addEventListener('input', function() {
+            const url = this.value;
+            if (url) {
+                document.getElementById('blogger-avatar-preview').src = url;
+            }
+        });
+        
+        function toggleSidebar() {
+            document.querySelector('.admin-container').classList.toggle('sidebar-collapsed');
+        }
+    </script>
+</body>
+</html>

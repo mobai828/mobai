@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章管理 - 个人博客</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body class="admin-body">
+    <div class="admin-container">
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <a href="/" class="logo"><i class="fas fa-blog"></i><span>博客管理</span></a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/admin" class="nav-item"><i class="fas fa-tachometer-alt"></i><span>仪表盘</span></a>
+                <a href="/admin/articles" class="nav-item active"><i class="fas fa-file-alt"></i><span>文章管理</span></a>
+                <a href="/admin/categories" class="nav-item"><i class="fas fa-folder"></i><span>分类管理</span></a>
+                <a href="/admin/tags" class="nav-item"><i class="fas fa-tags"></i><span>标签管理</span></a>
+                <a href="/admin/comments" class="nav-item"><i class="fas fa-comments"></i><span>评论管理</span></a>
+                <a href="/admin/users" class="nav-item"><i class="fas fa-users"></i><span>用户管理</span></a>
+                <a href="/admin/links" class="nav-item"><i class="fas fa-link"></i><span>友链管理</span></a>
+                <a href="/admin/settings" class="nav-item"><i class="fas fa-cog"></i><span>系统设置</span></a>
+            </nav>
+        </aside>
+        
+        <main class="admin-main">
+            <header class="admin-header">
+                <div class="header-left">
+                    <button class="toggle-sidebar" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                    <h1>文章管理</h1>
+                </div>
+                <div class="header-right">
+                    <div class="admin-user" id="user-menu">
+                        <img id="admin-avatar" src="/images/default-avatar.svg" alt="头像">
+                        <span id="admin-name">管理员</span>
+                        <div class="admin-dropdown" id="user-dropdown">
+                            <a href="/profile"><i class="fas fa-user"></i> 个人中心</a>
+                            <a href="javascript:void(0)" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出登录</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="admin-content">
+                <div class="admin-table-card">
+                    <div class="table-header">
+                        <h3>文章列表</h3>
+                        <div class="table-actions">
+                            <div class="search-box" style="margin-right: 10px;">
+                                <input type="text" id="search-input" placeholder="搜索文章标题..." class="form-control" style="width: 200px; display: inline-block;">
+                                <button class="btn btn-secondary" onclick="loadArticles()"><i class="fas fa-search"></i></button>
+                            </div>
+                            <select id="status-filter" class="form-control" style="width: auto;" onchange="loadArticles()">
+                                <option value="">全部状态</option>
+                                <option value="1">已发布</option>
+                                <option value="0">草稿</option>
+                                <option value="2">回收站</option>
+                            </select>
+                            <a href="/write-article" class="btn btn-primary"><i class="fas fa-plus"></i> 写文章</a>
+                        </div>
+                    </div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>标题</th>
+                                <th>分类</th>
+                                <th>状态</th>
+                                <th>浏览</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="article-list">
+                            <tr><td colspan="7" class="text-center">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="admin-pagination" id="pagination"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script th:src="@{/js/app.js}"></script>
+    <script>
+        let currentPage = 0;
+        let totalPages = 0;
+        let categoriesMap = {};
+        let dropdownTimer = null;
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Utils.isLoggedIn()) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            // 初始化用户信息
+            const user = Utils.getUser();
+            if (user) {
+                document.getElementById('admin-name').textContent = user.nickname || user.username;
+                if (user.avatar) {
+                    document.getElementById('admin-avatar').src = user.avatar;
+                }
+            }
+            
+            // 初始化下拉菜单交互
+            initDropdown();
+            
+            // 加载数据
+            try {
+                await loadCategories();
+            } catch (e) {
+                console.error('加载分类失败，但不影响文章加载', e);
+            }
+            
+            await loadArticles();
+        });
+        
+        function initDropdown() {
+            const menu = document.getElementById('user-menu');
+            const dropdown = document.getElementById('user-dropdown');
+            
+            if (!menu || !dropdown) return;
+            
+            menu.addEventListener('mouseenter', () => {
+                if (dropdownTimer) {
+                    clearTimeout(dropdownTimer);
+                    dropdownTimer = null;
+                }
+                dropdown.classList.add('show');
+            });
+            
+            menu.addEventListener('mouseleave', () => {
+                dropdownTimer = setTimeout(() => {
+                    dropdown.classList.remove('show');
+                }, 300); // 300ms 延迟
+            });
+            
+            dropdown.addEventListener('mouseenter', () => {
+                if (dropdownTimer) {
+                    clearTimeout(dropdownTimer);
+                    dropdownTimer = null;
+                }
+            });
+            
+            dropdown.addEventListener('mouseleave', () => {
+                dropdownTimer = setTimeout(() => {
+                    dropdown.classList.remove('show');
+                }, 300);
+            });
+        }
+        
+        function logout() {
+            Auth.logout();
+        }
+        
+        async function loadCategories() {
+            try {
+                const result = await Api.get('/api/categories');
+                if (result.success && result.data) {
+                    result.data.forEach(c => {
+                        categoriesMap[c.id] = c.name;
+                    });
+                }
+            } catch (e) {
+                console.error('加载分类失败', e);
+            }
+        }
+        
+        async function loadArticles(page = 0) {
+            currentPage = page;
+            const status = document.getElementById('status-filter').value;
+            const keyword = document.getElementById('search-input').value.trim();
+            
+            let url = `/api/admin/articles?page=${page}&size=20`;
+            if (status) url += `&status=${status}`;
+            if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+            
+            try {
+                // 添加加载状态
+                const tbody = document.getElementById('article-list');
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center"><i class="fas fa-spinner fa-spin"></i> 加载中...</td></tr>';
+                
+                const result = await Api.get(url);
+                if (result.success) {
+                    totalPages = result.totalPages;
+                    renderArticles(result.data);
+                    renderPagination();
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center">加载失败: ' + (result.message || '未知错误') + '</td></tr>';
+                }
+            } catch (e) {
+                console.error(e);
+                document.getElementById('article-list').innerHTML = '<tr><td colspan="7" class="text-center">加载失败，请检查网络或刷新页面</td></tr>';
+            }
+        }
+        
+        function renderArticles(articles) {
+            const tbody = document.getElementById('article-list');
+            if (!articles || articles.length === 0) {
+                const statusSelect = document.getElementById('status-filter');
+                const statusText = statusSelect.options[statusSelect.selectedIndex].text;
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center">暂无文章（当前筛选：${statusText}）</td></tr>`;
+                return;
+            }
+            
+            tbody.innerHTML = articles.map(article => {
+                let statusBadge = '';
+                let actionButtons = '';
+                
+                if (article.status === 1) {
+                    statusBadge = '<span class="status-badge published">已发布</span>';
+                    actionButtons = `
+                        <button class="btn-edit" onclick="editArticle(${article.id})" title="编辑"><i class="fas fa-edit"></i></button>
+                        <button class="btn-delete" onclick="deleteArticle(${article.id})" title="移至回收站"><i class="fas fa-trash"></i></button>
+                    `;
+                } else if (article.status === 0) {
+                    statusBadge = '<span class="status-badge draft">草稿</span>';
+                    actionButtons = `
+                        <button class="btn-edit" onclick="editArticle(${article.id})" title="编辑"><i class="fas fa-edit"></i></button>
+                        <button class="btn-delete" onclick="deleteArticle(${article.id})" title="移至回收站"><i class="fas fa-trash"></i></button>
+                    `;
+                } else if (article.status === 2) {
+                    statusBadge = '<span class="status-badge deleted" style="background:#e74c3c;color:white;">已删除</span>';
+                    actionButtons = `
+                        <button class="btn-restore" onclick="restoreArticle(${article.id})" title="还原" style="background:none;border:none;color:#2ecc71;cursor:pointer;margin-right:5px;"><i class="fas fa-undo"></i></button>
+                        <button class="btn-delete-permanent" onclick="deleteArticlePermanently(${article.id})" title="永久删除" style="background:none;border:none;color:#e74c3c;cursor:pointer;"><i class="fas fa-times"></i></button>
+                    `;
+                }
+                
+                return `
+                <tr>
+                    <td>${article.id}</td>
+                    <td><a href="/article/${article.id}" target="_blank" title="${article.title}" style="${article.status === 2 ? 'color:#999;pointer-events:none;' : ''}">${article.title}</a></td>
+                    <td>${categoriesMap[article.categoryId] || '<span style="color:#999">未分类</span>'}</td>
+                    <td>${statusBadge}</td>
+                    <td>${article.viewCount || 0}</td>
+                    <td>${Utils.formatDate(article.createTime)}</td>
+                    <td class="actions">
+                        ${actionButtons}
+                    </td>
+                </tr>
+            `}).join('');
+        }
+        
+        // ... (existing code) ...
+        
+        async function restoreArticle(id) {
+            if (!confirm('确定要还原这篇文章吗？')) return;
+            try {
+                const result = await Api.post(`/api/admin/articles/${id}/restore`);
+                if (result.success) {
+                    Toast.success('还原成功');
+                    loadArticles(currentPage);
+                } else {
+                    Toast.error(result.message || '还原失败');
+                }
+            } catch (e) {
+                Toast.error('还原失败');
+            }
+        }
+        
+        async function deleteArticlePermanently(id) {
+            if (!confirm('确定要永久删除这篇文章吗？此操作不可恢复！')) return;
+            try {
+                const result = await Api.delete(`/api/admin/articles/${id}/permanent`);
+                if (result.success) {
+                    Toast.success('永久删除成功');
+                    loadArticles(currentPage);
+                } else {
+                    Toast.error(result.message || '删除失败');
+                }
+            } catch (e) {
+                Toast.error('删除失败');
+            }
+        }
+        
+        function renderPagination() {
+            const container = document.getElementById('pagination');
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            let html = `<button ${currentPage === 0 ? 'disabled' : ''} onclick="loadArticles(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+            
+            // 简单的分页逻辑，显示前后几页
+            for (let i = 0; i < totalPages; i++) {
+                if (i === 0 || i === totalPages - 1 || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `<button class="${i === currentPage ? 'active' : ''}" onclick="loadArticles(${i})">${i + 1}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span>...</span>`;
+                }
+            }
+            
+            html += `<button ${currentPage >= totalPages - 1 ? 'disabled' : ''} onclick="loadArticles(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+            container.innerHTML = html;
+        }
+        
+        function editArticle(id) {
+            window.location.href = `/write-article?id=${id}`;
+        }
+        
+        async function deleteArticle(id) {
+            if (!confirm('确定要将这篇文章移至回收站吗？')) return;
+            try {
+                const result = await Api.delete(`/api/admin/articles/${id}`);
+                if (result.success) {
+                    Toast.success('文章已移至回收站');
+                    loadArticles(currentPage);
+                } else {
+                    Toast.error(result.message || '操作失败');
+                }
+            } catch (e) {
+                Toast.error('操作失败');
+            }
+        }
+        
+        function toggleSidebar() {
+            document.querySelector('.admin-container').classList.toggle('sidebar-collapsed');
+        }
+    </script>
+</body>
+</html>

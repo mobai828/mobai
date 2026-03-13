@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>用户注册测试</title>
+</head>
+<body>
+    <h2>用户注册测试</h2>
+    <form id="registerForm">
+        <label for="username">用户名:</label>
+        <input type="text" id="username" name="username" value="testuser"><br><br>
+        
+        <label for="email">邮箱:</label>
+        <input type="email" id="email" name="email" value="qzy0608282022@163.com"><br><br>
+        
+        <label for="password">密码:</label>
+        <input type="password" id="password" name="password" value="password123"><br><br>
+        
+        <label for="captcha">验证码:</label>
+        <input type="text" id="captcha" name="captcha" value="152388"><br><br>
+        
+        <button type="button" onclick="submitForm()">注册</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        function submitForm() {
+            const formData = {
+                username: document.getElementById('username').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                captcha: document.getElementById('captcha').value
+            };
+
+            fetch('http://localhost:8080/api/user/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').innerHTML = '<p>响应: ' + JSON.stringify(data) + '</p>';
+            })
+            .catch(error => {
+                document.getElementById('result').innerHTML = '<p>错误: ' + error + '</p>';
+            });
+        }
+    </script>
+</body>
+</html>

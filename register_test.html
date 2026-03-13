@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        input {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #response {
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>注册测试</h1>
+    
+    <form id="registerForm">
+        <div>
+            <label for="username">用户名:</label>
+            <input type="text" id="username" name="username" value="testuser" required>
+        </div>
+        
+        <div>
+            <label for="email">邮箱:</label>
+            <input type="email" id="email" name="email" value="qzy0608282022@163.com" required>
+        </div>
+        
+        <div>
+            <label for="password">密码:</label>
+            <input type="password" id="password" name="password" value="password123" required>
+        </div>
+        
+        <div>
+            <label for="captcha">验证码:</label>
+            <input type="text" id="captcha" name="captcha" placeholder="输入验证码" required>
+            <button type="button" id="sendCaptcha">发送验证码</button>
+        </div>
+        
+        <button type="submit">注册</button>
+    </form>
+    
+    <h2>响应结果:</h2>
+    <div id="response"></div>
+
+    <script>
+        // 发送验证码
+        document.getElementById('sendCaptcha').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const responseDiv = document.getElementById('response');
+            
+            responseDiv.innerHTML = '正在发送验证码...';
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/user/mail/send-captcha', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email })
+                });
+                
+                const result = await response.json();
+                responseDiv.innerHTML = `验证码发送响应:\n状态码: ${response.status}\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                responseDiv.innerHTML = `发送验证码失败: ${error.message}`;
+            }
+        });
+
+        // 提交注册表单
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                username: document.getElementById('username').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                captcha: document.getElementById('captcha').value
+            };
+            
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = '正在提交注册请求...';
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/user/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                responseDiv.innerHTML = `注册响应:\n状态码: ${response.status}\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                responseDiv.innerHTML = `注册失败: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  blog-app:
+    build: .
+    container_name: blog-app
+    ports:
+      - "8081:8081"
+    depends_on:
+      - blog-db
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://blog-db:3306/personal_blog_system?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      # 如果需要，可以在这里覆盖其他配置，例如上传路径
+      # - STORAGE_LOCATION=/app/uploads
+    volumes:
+      - ./uploads:/app/uploads
+    restart: always
+
+  blog-db:
+    image: mysql:8.0
+    container_name: blog-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=personal_blog_system
+    ports:
+      - "3306:3306"
+    volumes:
+      # 挂载初始化脚本
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/init.sql
+      # 数据持久化
+      - db_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+
+volumes:
+  db_data:

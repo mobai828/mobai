@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<aside th:fragment="sidebar" class="sidebar">
+    <!-- 博主信息 -->
+    <div class="sidebar-widget">
+        <div class="blogger-info">
+            <img th:src="${blogger.avatar != null && blogger.avatar != '' ? blogger.avatar : '/images/default-avatar.svg'}" alt="博主头像" class="blogger-avatar">
+            <h3 class="blogger-name" th:text="${blogger.nickname != null ? blogger.nickname : blogger.username}">博主</h3>
+            <p class="blogger-intro" th:text="${blogger.intro != null ? blogger.intro : '暂无介绍'}">热爱技术，热爱生活</p>
+            <div class="blogger-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="article-count" th:text="${articleCount}">0</div>
+                    <div class="stat-label">文章</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="category-count">0</div>
+                    <div class="stat-label">分类</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="tag-count">0</div>
+                    <div class="stat-label">标签</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 分类列表 -->
+    <div class="sidebar-widget">
+        <div class="widget-header">
+            <i class="fas fa-folder"></i>
+            <span>分类</span>
+        </div>
+        <div class="widget-body">
+            <ul class="category-list">
+                <li th:each="category : ${categories}">
+                    <a th:href="@{/category/{id}(id=${category.id})}">
+                        <span th:text="${category.name}">分类名称</span>
+                        <span class="category-count" th:text="${category.articleCount}">0</span>
+                    </a>
+                </li>
+                <li th:if="${#lists.isEmpty(categories)}">
+                    <span class="text-muted">暂无分类</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- 标签云 -->
+    <div class="sidebar-widget">
+        <div class="widget-header">
+            <i class="fas fa-tags"></i>
+            <span>标签</span>
+        </div>
+        <div class="widget-body">
+            <div class="tag-cloud">
+                <a th:each="tag : ${tags}" th:href="@{/tag/{id}(id=${tag.id})}" class="tag" th:text="${tag.name}">标签</a>
+                <span th:if="${#lists.isEmpty(tags)}" class="text-muted">暂无标签</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 热门文章 -->
+    <div class="sidebar-widget" id="hot-articles-widget">
+        <div class="widget-header">
+            <i class="fas fa-fire"></i>
+            <span>热门文章</span>
+        </div>
+        <div class="widget-body">
+            <ul class="hot-article-list" id="hot-article-list">
+                <!-- 通过JS动态加载 -->
+            </ul>
+        </div>
+    </div>
+    <script th:inline="javascript">
+        // 将 loadHotArticles 定义为全局函数
+        window.loadHotArticles = async function() {
+            try {
+                console.log('开始加载热门文章...');
+                // 使用新的热门文章接口，获取浏览量最高的3篇文章
+                // 确保 Api 对象存在，如果不存在则使用 fetch
+                let result;
+                if (typeof Api !== 'undefined') {
+                    result = await Api.get('/api/articles/popular?limit=3');
+                } else {
+                    // 回退到使用 fetch
+                    const response = await fetch('/api/articles/popular?limit=3');
+                    result = await response.json();
+                }
+                
+                console.log('热门文章加载结果:', result);
+                
+                const list = document.getElementById('hot-article-list');
+                if (!list) {
+                    console.error('找不到热门文章列表容器: hot-article-list');
+                    return;
+                }
+                
+                if (result.success && result.data) {
+                    if (result.data.length === 0) {
+                        list.innerHTML = '<li class="text-muted">暂无文章</li>';
+                        return;
+                    }
+                    
+                    list.innerHTML = result.data.map((article, index) => `
+                        <li class="hot-article-item">
+                            <span class="hot-article-rank">${index + 1}</span>
+                            <div class="hot-article-info">
+                                <a href="/article/${article.id}" class="hot-article-title">${article.title}</a>
+                                <div class="hot-article-meta">
+                                    <i class="fas fa-eye"></i> ${article.viewCount || 0}
+                                </div>
+                            </div>
+                        </li>
+                    `).join('');
+                } else {
+                    console.error('获取热门文章失败，API返回:', result);
+                    list.innerHTML = '<li class="text-muted">加载失败</li>';
+                }
+            } catch (e) {
+                console.error('加载热门文章发生异常:', e);
+                const list = document.getElementById('hot-article-list');
+                if (list) {
+                    list.innerHTML = '<li class="text-muted">加载出错</li>';
+                }
+            }
+        };
+
+        // 更新统计数据
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                const categories = /*[[${categories}]]*/ [];
+                const tags = /*[[${tags}]]*/ [];
+                
+                const categoryCountEl = document.getElementById('category-count');
+                if (categoryCountEl) {
+                    categoryCountEl.textContent = (categories && categories.length) || 0;
+                }
+                
+                const tagCountEl = document.getElementById('tag-count');
+                if (tagCountEl) {
+                    tagCountEl.textContent = (tags && tags.length) || 0;
+                }
+                
+                // 尝试从本地存储获取当前登录用户信息并更新侧边栏（如果已登录且是管理员）
+                // 普通用户不更新侧边栏，保持显示博主信息
+                if (typeof Utils !== 'undefined') {
+                    if (Utils.isLoggedIn()) {
+                        const currentUser = Utils.getUser();
+                        if (currentUser && currentUser.role === 'ADMIN') {
+                            // 更新头像
+                            const avatarEl = document.querySelector('.blogger-avatar');
+                            if (avatarEl && currentUser.avatar) {
+                                avatarEl.src = currentUser.avatar;
+                            }
+                            
+                            // 更新昵称和角色标签
+                            const nameEl = document.querySelector('.blogger-name');
+                            if (nameEl) {
+                                let displayName = currentUser.nickname || currentUser.username;
+                                // 管理员添加图标标识，避免文字重复
+                                nameEl.innerHTML = `${displayName} <i class="fas fa-shield-alt" style="color: var(--primary-color); margin-left: 5px;" title="管理员"></i>`;
+                            }
+                            
+                            // 更新简介
+                            const introEl = document.querySelector('.blogger-intro');
+                            if (introEl && currentUser.intro) {
+                                introEl.textContent = currentUser.intro;
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('更新侧边栏统计信息失败:', e);
+            }
+            
+            // 加载热门文章
+            // 使用 setTimeout 确保在主线程空闲时执行，避免被前面的错误阻塞
+            setTimeout(window.loadHotArticles, 0);
+        });
+        
+        // 立即尝试加载一次，以防 DOMContentLoaded 已经触发过
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+             setTimeout(window.loadHotArticles, 0);
+        }
+    </script>
+</aside>
+</html>

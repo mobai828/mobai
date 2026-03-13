@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: head('归档')"></head>
+<body>
+    <nav th:replace="fragments/header :: navbar"></nav>
+    
+    <div class="container">
+        <div class="main-content">
+            <div class="content-area">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-archive"></i>
+                        <span>文章归档</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="archive-timeline">
+                            <div th:each="yearEntry : ${archive}" class="archive-year">
+                                <h3 class="year-title" style="font-size: 1.5rem; color: var(--primary-color); margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-color);">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span th:text="${yearEntry.key}">2024</span> 年
+                                </h3>
+                                
+                                <div th:each="monthEntry : ${yearEntry.value}" class="archive-month" style="margin-bottom: 25px; margin-left: 20px;">
+                                    <h4 style="color: var(--text-color); margin-bottom: 15px;">
+                                        <span th:text="${monthEntry.key}">1</span> 月
+                                        <span style="font-size: 14px; color: var(--text-muted); font-weight: normal;">
+                                            (<span th:text="${#lists.size(monthEntry.value)}">0</span> 篇)
+                                        </span>
+                                    </h4>
+                                    
+                                    <ul class="archive-list" style="list-style: none; margin-left: 20px;">
+                                        <li th:each="article : ${monthEntry.value}" style="padding: 10px 0; border-bottom: 1px dashed var(--border-color);">
+                                            <div style="display: flex; align-items: center; gap: 15px;">
+                                                <span style="color: var(--text-muted); font-size: 14px; min-width: 80px;" th:text="${#temporals.format(article.createTime, 'MM-dd')}">01-01</span>
+                                                <a th:href="@{/article/{id}(id=${article.id})}" style="flex: 1; color: var(--text-color);" th:text="${article.title}">文章标题</a>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div th:if="${archive == null or archive.isEmpty()}" class="empty-state">
+                                <i class="fas fa-archive"></i>
+                                <h4>暂无文章</h4>
+                                <p>还没有发布任何文章</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <aside th:replace="fragments/sidebar :: sidebar"></aside>
+        </div>
+    </div>
+    
+    <footer th:replace="fragments/footer :: footer"></footer>
+    <th:block th:replace="fragments/footer :: scripts"></th:block>
+</body>
+</html>

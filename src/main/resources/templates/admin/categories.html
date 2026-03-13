@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分类管理 - 个人博客</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body class="admin-body">
+    <div class="admin-container">
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <a href="/" class="logo"><i class="fas fa-blog"></i><span>博客管理</span></a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/admin" class="nav-item"><i class="fas fa-tachometer-alt"></i><span>仪表盘</span></a>
+                <a href="/admin/articles" class="nav-item"><i class="fas fa-file-alt"></i><span>文章管理</span></a>
+                <a href="/admin/categories" class="nav-item active"><i class="fas fa-folder"></i><span>分类管理</span></a>
+                <a href="/admin/tags" class="nav-item"><i class="fas fa-tags"></i><span>标签管理</span></a>
+                <a href="/admin/comments" class="nav-item"><i class="fas fa-comments"></i><span>评论管理</span></a>
+                <a href="/admin/users" class="nav-item"><i class="fas fa-users"></i><span>用户管理</span></a>
+                <a href="/admin/links" class="nav-item"><i class="fas fa-link"></i><span>友链管理</span></a>
+                <a href="/admin/settings" class="nav-item"><i class="fas fa-cog"></i><span>系统设置</span></a>
+            </nav>
+        </aside>
+        
+        <main class="admin-main">
+            <header class="admin-header">
+                <div class="header-left">
+                    <button class="toggle-sidebar" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                    <h1>分类管理</h1>
+                </div>
+            </header>
+            
+            <div class="admin-content">
+                <div class="admin-table-card">
+                    <div class="table-header">
+                        <h3>分类列表</h3>
+                        <button class="btn btn-primary" onclick="showAddModal()"><i class="fas fa-plus"></i> 添加分类</button>
+                    </div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>名称</th>
+                                <th>文章数</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="category-list">
+                            <tr><td colspan="5" class="text-center">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- 添加/编辑弹窗 -->
+    <div class="admin-modal" id="category-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">添加分类</h3>
+                <button class="modal-close" onclick="hideModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="category-form">
+                    <input type="hidden" id="category-id">
+                    <div class="form-group">
+                        <label>分类名称</label>
+                        <input type="text" class="form-control" id="category-name" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="hideModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveCategory()">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <script th:src="@{/js/app.js}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!Utils.isLoggedIn()) {
+                window.location.href = '/login';
+                return;
+            }
+            loadCategories();
+        });
+        
+        async function loadCategories() {
+            try {
+                const result = await Api.get('/api/categories');
+                if (result.success) {
+                    renderCategories(result.data);
+                }
+            } catch (e) {
+                document.getElementById('category-list').innerHTML = '<tr><td colspan="5" class="text-center">加载失败</td></tr>';
+            }
+        }
+        
+        function renderCategories(categories) {
+            const tbody = document.getElementById('category-list');
+            if (categories.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">暂无分类</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = categories.map(cat => `
+                <tr>
+                    <td>${cat.id}</td>
+                    <td>${cat.name}</td>
+                    <td>${cat.articleCount || 0}</td>
+                    <td>${Utils.formatDate(cat.createTime)}</td>
+                    <td class="actions">
+                        <button class="btn-edit" onclick="editCategory(${cat.id}, '${cat.name}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn-delete" onclick="deleteCategory(${cat.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function showAddModal() {
+            document.getElementById('modal-title').textContent = '添加分类';
+            document.getElementById('category-id').value = '';
+            document.getElementById('category-name').value = '';
+            document.getElementById('category-modal').classList.add('show');
+        }
+        
+        function editCategory(id, name) {
+            document.getElementById('modal-title').textContent = '编辑分类';
+            document.getElementById('category-id').value = id;
+            document.getElementById('category-name').value = name;
+            document.getElementById('category-modal').classList.add('show');
+        }
+        
+        function hideModal() {
+            document.getElementById('category-modal').classList.remove('show');
+        }
+        
+        async function saveCategory() {
+            const id = document.getElementById('category-id').value;
+            const name = document.getElementById('category-name').value.trim();
+            
+            if (!name) {
+                Toast.warning('请输入分类名称');
+                return;
+            }
+            
+            try {
+                if (id) {
+                    await Api.put(`/api/articles/categories/${id}`, { name });
+                    Toast.success('更新成功');
+                } else {
+                    await Api.post('/api/articles/categories', { name });
+                    Toast.success('添加成功');
+                }
+                hideModal();
+                loadCategories();
+            } catch (e) {
+                Toast.error('操作失败');
+            }
+        }
+        
+        async function deleteCategory(id) {
+            if (!confirm('确定要删除这个分类吗？')) return;
+            try {
+                await Api.delete(`/api/articles/categories/${id}`);
+                Toast.success('删除成功');
+                loadCategories();
+            } catch (e) {
+                Toast.error('删除失败');
+            }
+        }
+        
+        function toggleSidebar() {
+            document.querySelector('.admin-container').classList.toggle('sidebar-collapsed');
+        }
+    </script>
+</body>
+</html>

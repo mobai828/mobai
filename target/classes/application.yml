@@ -1,0 +1,74 @@
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: jdbc:mysql://149.88.64.20/blog?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&createDatabaseIfNotExist=true
+    username: mobai
+    password: 060828
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  mail:
+    host: smtp.163.com
+    port: 465
+    username: qzy0608282022@163.com
+    password: KT48NC23gxt4XS5R
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          socketFactory:
+            class: javax.net.ssl.SSLSocketFactory
+            port: 465
+
+jwt:
+  secret: blogSecretKey
+  expiration: 86400
+
+storage:
+  location: ./uploads
+  cloud-provider: local
+  # 如果使用云存储，请取消注释并填写以下配置
+  #cloud-access-key: your-access-key
+  #cloud-secret-key: your-secret-key
+  #cloud-bucket-name: your-bucket-name
+  #cloud-endpoint: your-endpoint
+
+# Gitee OAuth 配置
+gitee:
+  client-id: your-gitee-client-id
+  client-secret: your-gitee-client-secret
+  redirect-uri: http://localhost:8081/api/auth/callback/gitee
+  authorization-url: https://gitee.com/oauth/authorize
+  token-url: https://gitee.com/oauth/token
+  user-info-url: https://gitee.com/api/v5/user
+
+# 博客配置
+blog:
+  comment:
+    moderation: true  # 是否启用评论审核
+    anonymous: false  # 是否允许匿名评论
+  admin:
+    email: admin@example.com  # 管理员邮箱
+
+# 禁用 Actuator JMX 端点
+management:
+  endpoints:
+    jmx:
+      exposure:
+        exclude: "*"
+
+logging:
+  level:
+    root: INFO
+    com.example.blog: INFO

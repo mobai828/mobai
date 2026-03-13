@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - 个人博客</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="auth-page">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2><i class="fas fa-blog"></i> 个人博客</h2>
+            <p>创建您的账号，开始博客之旅</p>
+        </div>
+        
+        <form id="register-form" onsubmit="return handleRegister(event)">
+            <div class="form-group">
+                <label>用户名</label>
+                <input type="text" class="form-control" id="username" placeholder="请输入用户名（3-20个字符）" required minlength="3" maxlength="20">
+            </div>
+            <div class="form-group">
+                <label>邮箱</label>
+                <input type="email" class="form-control" id="email" placeholder="请输入邮箱" required>
+            </div>
+            <div class="form-group">
+                <label>验证码</label>
+                <div class="form-row">
+                    <input type="text" class="form-control" id="captcha" placeholder="请输入验证码" required>
+                    <button type="button" class="btn btn-secondary captcha-btn" id="send-captcha" onclick="sendCaptcha()">
+                        发送验证码
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" class="form-control" id="password" placeholder="请输入密码（至少6位）" required minlength="6">
+            </div>
+            <div class="form-group">
+                <label>确认密码</label>
+                <input type="password" class="form-control" id="confirm-password" placeholder="请再次输入密码" required>
+            </div>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                    <input type="checkbox" id="agree" required>
+                    我已阅读并同意 <a href="/terms" target="_blank">服务条款</a>
+                </label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+                <i class="fas fa-user-plus"></i> 注册
+            </button>
+        </form>
+        
+        <div class="auth-divider">
+            <span>其他注册方式</span>
+        </div>
+        
+        <div class="social-login">
+            <a href="/api/auth/login/gitee" class="social-btn gitee" title="Gitee登录">
+                <i class="fab fa-git-alt"></i>
+            </a>
+        </div>
+        
+        <div class="form-footer">
+            已有账号？<a href="/login">立即登录</a>
+        </div>
+    </div>
+    
+    <script th:src="@{/js/app.js}"></script>
+    <script>
+        let captchaCountdown = 0;
+        
+        // 发送验证码
+        async function sendCaptcha() {
+            if (captchaCountdown > 0) return;
+            
+            const email = document.getElementById('email').value;
+            if (!email) {
+                Toast.warning('请输入邮箱');
+                return;
+            }
+            
+            try {
+                const result = await Auth.sendCaptcha(email, 'REGISTER');
+                if (result.success) {
+                    Toast.success('验证码已发送');
+                    startCountdown();
+                } else {
+                    Toast.error(result.message || '发送失败');
+                }
+            } catch (e) {
+                Toast.error('发送失败，请稍后重试');
+            }
+        }
+        
+        function startCountdown() {
+            captchaCountdown = 60;
+            const btn = document.getElementById('send-captcha');
+            const timer = setInterval(() => {
+                if (captchaCountdown > 0) {
+                    btn.textContent = `${captchaCountdown}s`;
+                    btn.disabled = true;
+                    captchaCountdown--;
+                } else {
+                    btn.textContent = '发送验证码';
+                    btn.disabled = false;
+                    clearInterval(timer);
+                }
+            }, 1000);
+        }
+        
+        // 注册
+        async function handleRegister(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const captcha = document.getElementById('captcha').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            if (password !== confirmPassword) {
+                Toast.error('两次输入的密码不一致');
+                return false;
+            }
+            
+            try {
+                const result = await Auth.register(username, email, password, captcha);
+                if (result.success) {
+                    Toast.success('注册成功，请登录');
+                    setTimeout(() => {
+                        window.location.href = '/login?success';
+                    }, 1500);
+                } else {
+                    Toast.error(result.message || '注册失败');
+                }
+            } catch (e) {
+                Toast.error('注册失败，请稍后重试');
+            }
+            return false;
+        }
+        
+        // 检查是否已登录
+        if (Utils.isLoggedIn()) {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

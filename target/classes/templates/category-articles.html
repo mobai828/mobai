@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/header :: head(${currentCategory != null ? currentCategory.name : '分类文章'})"></head>
+<body>
+    <nav th:replace="fragments/header :: navbar"></nav>
+    
+    <div class="container">
+        <div class="main-content">
+            <div class="content-area">
+                <div class="card mb-20">
+                    <div class="card-header">
+                        <i class="fas fa-folder-open"></i>
+                        <span th:text="${currentCategory != null ? currentCategory.name : '分类文章'}">分类名称</span>
+                        <span style="margin-left: auto; font-weight: normal; color: var(--text-muted);">
+                            共 <span th:text="${#lists.size(articles)}">0</span> 篇文章
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="article-list">
+                    <div th:each="article : ${articles}" class="article-card fade-in">
+                        <div class="article-cover" th:if="${article.cover}">
+                            <a th:href="@{/article/{id}(id=${article.id})}">
+                                <img th:src="${article.cover}" alt="文章封面">
+                            </a>
+                        </div>
+                        <div class="article-cover" th:unless="${article.cover}">
+                            <a th:href="@{/article/{id}(id=${article.id})}">
+                                <img src="/images/default-cover.svg" alt="默认封面">
+                            </a>
+                        </div>
+                        <div class="article-info">
+                            <div class="article-meta">
+                                <span>
+                                    <i class="fas fa-calendar"></i>
+                                    <span th:text="${#temporals.format(article.createTime, 'yyyy-MM-dd')}">2024-01-01</span>
+                                </span>
+                            </div>
+                            <h2 class="article-title">
+                                <a th:href="@{/article/{id}(id=${article.id})}" th:text="${article.title}">文章标题</a>
+                            </h2>
+                            <p class="article-summary" th:text="${#strings.abbreviate(article.content.replaceAll('<[^>]*>', ''), 200)}">
+                                文章摘要内容...
+                            </p>
+                            <div class="article-footer">
+                                <div class="article-stats">
+                                    <span><i class="fas fa-eye"></i> <span th:text="${article.viewCount}">0</span></span>
+                                    <span><i class="fas fa-heart"></i> <span th:text="${article.likeCount}">0</span></span>
+                                </div>
+                                <a th:href="@{/article/{id}(id=${article.id})}" class="btn btn-sm btn-primary">
+                                    阅读全文 <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div th:if="${#lists.isEmpty(articles)}" class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h4>暂无文章</h4>
+                        <p>该分类下还没有文章</p>
+                    </div>
+                </div>
+                
+                <div class="pagination" th:if="${totalPages > 1}">
+                    <a th:if="${currentPage > 0}" th:href="@{/category/{id}(id=${currentCategory.id}, page=${currentPage - 1})}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <span th:if="${currentPage == 0}" class="disabled"><i class="fas fa-chevron-left"></i></span>
+                    
+                    <th:block th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                        <a th:if="${i != currentPage}" th:href="@{/category/{id}(id=${currentCategory.id}, page=${i})}" th:text="${i + 1}">1</a>
+                        <span th:if="${i == currentPage}" class="active" th:text="${i + 1}">1</span>
+                    </th:block>
+                    
+                    <a th:if="${currentPage < totalPages - 1}" th:href="@{/category/{id}(id=${currentCategory.id}, page=${currentPage + 1})}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                    <span th:if="${currentPage >= totalPages - 1}" class="disabled"><i class="fas fa-chevron-right"></i></span>
+                </div>
+            </div>
+            
+            <aside th:replace="fragments/sidebar :: sidebar"></aside>
+        </div>
+    </div>
+    
+    <footer th:replace="fragments/footer :: footer"></footer>
+    <th:block th:replace="fragments/footer :: scripts"></th:block>
+</body>
+</html>

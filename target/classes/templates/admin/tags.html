@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>标签管理 - 个人博客</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body class="admin-body">
+    <div class="admin-container">
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <a href="/" class="logo"><i class="fas fa-blog"></i><span>博客管理</span></a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/admin" class="nav-item"><i class="fas fa-tachometer-alt"></i><span>仪表盘</span></a>
+                <a href="/admin/articles" class="nav-item"><i class="fas fa-file-alt"></i><span>文章管理</span></a>
+                <a href="/admin/categories" class="nav-item"><i class="fas fa-folder"></i><span>分类管理</span></a>
+                <a href="/admin/tags" class="nav-item active"><i class="fas fa-tags"></i><span>标签管理</span></a>
+                <a href="/admin/comments" class="nav-item"><i class="fas fa-comments"></i><span>评论管理</span></a>
+                <a href="/admin/users" class="nav-item"><i class="fas fa-users"></i><span>用户管理</span></a>
+                <a href="/admin/links" class="nav-item"><i class="fas fa-link"></i><span>友链管理</span></a>
+                <a href="/admin/settings" class="nav-item"><i class="fas fa-cog"></i><span>系统设置</span></a>
+            </nav>
+        </aside>
+        
+        <main class="admin-main">
+            <header class="admin-header">
+                <div class="header-left">
+                    <button class="toggle-sidebar" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                    <h1>标签管理</h1>
+                </div>
+            </header>
+            
+            <div class="admin-content">
+                <div class="admin-table-card">
+                    <div class="table-header">
+                        <h3>标签列表</h3>
+                        <button class="btn btn-primary" onclick="showAddModal()"><i class="fas fa-plus"></i> 添加标签</button>
+                    </div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>名称</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tag-list">
+                            <tr><td colspan="4" class="text-center">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- 添加/编辑弹窗 -->
+    <div class="admin-modal" id="tag-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">添加标签</h3>
+                <button class="modal-close" onclick="hideModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="tag-form">
+                    <input type="hidden" id="tag-id">
+                    <div class="form-group">
+                        <label>标签名称</label>
+                        <input type="text" class="form-control" id="tag-name" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="hideModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveTag()">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <script th:src="@{/js/app.js}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!Utils.isLoggedIn()) {
+                window.location.href = '/login';
+                return;
+            }
+            loadTags();
+        });
+        
+        async function loadTags() {
+            try {
+                const result = await Api.get('/api/tags');
+                if (result.success) {
+                    renderTags(result.data);
+                }
+            } catch (e) {
+                document.getElementById('tag-list').innerHTML = '<tr><td colspan="4" class="text-center">加载失败</td></tr>';
+            }
+        }
+        
+        function renderTags(tags) {
+            const tbody = document.getElementById('tag-list');
+            if (tags.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">暂无标签</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = tags.map(tag => `
+                <tr>
+                    <td>${tag.id}</td>
+                    <td><span class="tag">${tag.name}</span></td>
+                    <td>${Utils.formatDate(tag.createTime)}</td>
+                    <td class="actions">
+                        <button class="btn-edit" onclick="editTag(${tag.id}, '${tag.name}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn-delete" onclick="deleteTag(${tag.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function showAddModal() {
+            document.getElementById('modal-title').textContent = '添加标签';
+            document.getElementById('tag-id').value = '';
+            document.getElementById('tag-name').value = '';
+            document.getElementById('tag-modal').classList.add('show');
+        }
+        
+        function editTag(id, name) {
+            document.getElementById('modal-title').textContent = '编辑标签';
+            document.getElementById('tag-id').value = id;
+            document.getElementById('tag-name').value = name;
+            document.getElementById('tag-modal').classList.add('show');
+        }
+        
+        function hideModal() {
+            document.getElementById('tag-modal').classList.remove('show');
+        }
+        
+        async function saveTag() {
+            const id = document.getElementById('tag-id').value;
+            const name = document.getElementById('tag-name').value.trim();
+            
+            if (!name) {
+                Toast.warning('请输入标签名称');
+                return;
+            }
+            
+            try {
+                if (id) {
+                    await Api.put(`/api/articles/tags/${id}`, { name });
+                    Toast.success('更新成功');
+                } else {
+                    await Api.post('/api/articles/tags', { name });
+                    Toast.success('添加成功');
+                }
+                hideModal();
+                loadTags();
+            } catch (e) {
+                Toast.error('操作失败');
+            }
+        }
+        
+        async function deleteTag(id) {
+            if (!confirm('确定要删除这个标签吗？')) return;
+            try {
+                await Api.delete(`/api/articles/tags/${id}`);
+                Toast.success('删除成功');
+                loadTags();
+            } catch (e) {
+                Toast.error('删除失败');
+            }
+        }
+        
+        function toggleSidebar() {
+            document.querySelector('.admin-container').classList.toggle('sidebar-collapsed');
+        }
+    </script>
+</body>
+</html>
